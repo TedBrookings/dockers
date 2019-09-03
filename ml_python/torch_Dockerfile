@@ -1,0 +1,51 @@
+ARG PYTORCH_TAG=latest
+ARG CONDA_CUDA_VERSION=10.0
+ARG CONDA_CUDNN_VERSION=7.6
+
+FROM pytorch/pytorch:$PYTORCH_TAG
+
+ARG CONDA_CUDA_VERSION
+ARG CONDA_CUDNN_VERSION
+
+LABEL maintainer="Ted Brookings <tbrookin@broadinstitute.org>"
+ENV HOME=/root
+
+# 1) if want to escape reliance on pytorch docker and base from ubuntu,
+#    need to build torch from source. See:
+#    https://github.com/pytorch/pytorch/blob/master/docker/pytorch/Dockerfile
+# 2) if want to avoid need for special conda cudatoolkit, need to build
+#    tensorflow from source:
+#    https://www.tensorflow.org/install/source
+
+# install cmake, google-cloud-sdk (gsutil), then conda and pip packages
+# NOTE: ignore apt-utils warnings: we don't want interactive install anyway!
+RUN sed -i 's/^#force_color_prompt=yes$/force_color_prompt=yes/' ~/.bashrc \
+    && git config --global core.editor "nano" \
+    && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+        apt-transport-https ca-certificates gnupg-agent \
+        software-properties-common wget nano cmake\
+    && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+        > /etc/apt/sources.list.d/google-cloud-sdk.list \
+    && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+        | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+        google-cloud-sdk \
+    && apt-get autoremove && apt-get clean
+   
+# install 
+RUN conda install -n base --force-reinstall conda \
+    && conda update -n base -c defaults conda \
+    && conda config --prepend channels conda-forge \
+    && conda config --prepend channels pytorch \
+    && conda install -n base -y python=$PYTHON_VERSION \
+    && conda install -n base -y --freeze-installed \
+        seaborn matplotlib jupyter pytest pytest-cov sortedcontainers psutil \
+        memory_profiler line_profiler scipy scikit-learn pandas dask pytables \
+        intervaltree hyperopt autograd \
+        cudatoolkit=$CONDA_CUDA_VERSION cudnn=$CONDA_CUDNN_VERSION \
+    && conda install -n base -y --freeze-installed -c bioconda \
+        pybedtools pytabix pysam \
+    && conda run -n base pip install --no-cache-dir \
+        MulticoreTSNE phate pyro-ppl jax jaxlib tensorflow-gpu keras xgboost \
+    && conda clean -ya

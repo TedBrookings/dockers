@@ -1,0 +1,58 @@
+ARG UBUNTU_TAG=19.04
+ARG PYTHON_VERSION=3.7.4
+ARG CUDA_VERSION=10.1
+
+FROM ubuntu:$UBUNTU_TAG
+
+ARG CONDA_INSTALLER=/root/miniconda_install.bin
+ARG CONDA_INSTALL_PATH=/opt/miniconda
+
+LABEL maintainer="Ted Brookings <tbrookin@broadinstitute.org>"
+ENV HOME=/root
+ENV PATH=$CONDA_INSTALL_PATH/bin:$PATH
+
+# deleted lines:
+#    && add-apt-repository -y ppa:graphics-drivers/ppa \
+# && conda init bash && conda config --set auto_activate_base False \
+
+# install cmake, google-cloud-sdk (gsutil), then conda and pip packages
+# NOTE: ignore apt-utils warnings: we don't want interactive install anyway!
+RUN sed -i 's/^#force_color_prompt=yes$/force_color_prompt=yes/' ~/.bashrc \
+    && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+        apt-transport-https ca-certificates gnupg-agent \
+        software-properties-common curl wget nano g++ cmake\
+    && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+        > /etc/apt/sources.list.d/google-cloud-sdk.list \
+    && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+        | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - \
+    && apt-get update \
+    && apt-cache search ^nvidia-driver- | grep "NVIDIA driver" \
+    | cut -d' ' -f1 | tail -n1 | DEBIAN_FRONTEND=noninteractive xargs apt-get install --no-install-recommends -y \
+        google-cloud-sdk \
+    && apt-get autoremove && apt-get clean
+   
+# install 
+RUN wget  -q --show-progress --progress=dot:giga \
+        https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+        -O $CONDA_INSTALLER \
+    && /bin/bash $CONDA_INSTALLER -b -p $CONDA_INSTALL_PATH \
+    && rm -f $CONDA_INSTALLER \
+    && ln -s $CONDA_INSTALL_PATH/etc/profile.d/conda.sh /etc/profile.d/conda.sh \
+    && echo ". $CONDA_INSTALL_PATH/etc/profile.d/conda.sh" >> $HOME/.bashrc \
+    && echo "CONDA_AUTO_ACTIVATE_BASE=false" >> $HOME/.bashrc \
+    && /bin/bash $CONDA_INSTALL_PATH/etc/profile.d/conda.sh \
+    && conda install -n base --force-reinstall conda \
+    && conda update -n base -c defaults conda \
+    && conda config --prepend channels conda-forge \
+    && conda config --prepend channels pytorch \
+    && conda install -n base -y python=$PYTHON_VERSION \
+    && conda install -n base -y --freeze-installed -c bioconda \
+        pybedtools pytabix pysam \
+    && conda install -n base -y --freeze-installed \
+        seaborn matplotlib jupyter pytest pytest-cov sortedcontainers psutil \
+        memory_profiler line_profiler scipy scikit-learn pandas dask pytables \
+        intervaltree hyperopt autograd \
+    && conda install -n base -y --freeze-install -c pytorch \
+        pytorch torchvision cudatoolkit=$CUDA_VERSION \
+    && conda run -n base pip install --no-cache-dir MulticoreTSNE phate pyro-ppl jax jaxlib keras xgboost \
+    && conda clean -ya

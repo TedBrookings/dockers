@@ -1,16 +1,12 @@
-ARG UBUNTU_TAG=19.04
-ARG PYTHON_VERSION=3.7.4
+ARG UBUNTU_TAG=19.10
 ARG NVIDIA_DRIVER_VERSION
 
 FROM ubuntu:$UBUNTU_TAG
 
-ARG CONDA_INSTALLER=/root/miniconda_install.bin
-ARG CONDA_INSTALL_PATH=/miniconda
 ARG NVIDIA_DRIVER_VERSION
 
 LABEL maintainer="Ted Brookings <tbrookin@broadinstitute.org>"
 ENV HOME=/root
-ENV DEBIAN_FRONTEND=noninteractive
 ENV PATH=$CONDA_INSTALL_PATH/bin:$PATH
 
 
@@ -19,8 +15,10 @@ ENV PATH=$CONDA_INSTALL_PATH/bin:$PATH
 #         and latest NVIDIA driver
 # NOTE: ignore apt-utils warnings: we don't want interactive install anyway!
 RUN sed -i 's/^#force_color_prompt=yes$/force_color_prompt=yes/' ~/.bashrc \
-    && apt-get update && apt-get install --no-install-recommends -y \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive  apt-get install --no-install-recommends -y \
         apt-transport-https ca-certificates gnupg-agent \
+        linux-headers-generic g++ cmake \
         software-properties-common curl wget nano \
     && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
         > /etc/apt/sources.list.d/google-cloud-sdk.list \
@@ -34,6 +32,6 @@ RUN sed -i 's/^#force_color_prompt=yes$/force_color_prompt=yes/' ~/.bashrc \
             apt-cache search ^nvidia-driver- | grep "NVIDIA driver" \
             | cut -d' ' -f1 | tail -n1; \
         fi \
-        | xargs apt-get install --no-install-recommends -y \
-            cmake google-cloud-sdk nvidia-cuda-toolkit \
+        | DEBIAN_FRONTEND=noninteractive xargs apt-get install --no-install-recommends -y \
+            google-cloud-sdk nvidia-cuda-toolkit \
     && apt-get autoremove && apt-get clean

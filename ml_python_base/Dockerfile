@@ -1,37 +1,20 @@
-ARG UBUNTU_TAG=19.10
-ARG NVIDIA_DRIVER_VERSION
-
-FROM ubuntu:$UBUNTU_TAG
-
-ARG NVIDIA_DRIVER_VERSION
-
+FROM nvidia/cuda:10.1-cudnn7-devel-ubuntu16.04
 LABEL maintainer="Ted Brookings <tbrookin@broadinstitute.org>"
+
 ENV HOME=/root
-ENV PATH=$CONDA_INSTALL_PATH/bin:$PATH
 
-
-# install basic system utils,
-#         google-cloud-sdk (gsutil),
-#         and latest NVIDIA driver
-# NOTE: ignore apt-utils warnings: we don't want interactive install anyway!
 RUN sed -i 's/^#force_color_prompt=yes$/force_color_prompt=yes/' ~/.bashrc \
     && apt-get update \
-    && DEBIAN_FRONTEND=noninteractive  apt-get install --no-install-recommends -y \
+    && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
         apt-transport-https ca-certificates gnupg-agent \
-        linux-headers-generic g++ cmake \
+        linux-headers-generic git g++ cmake \
         software-properties-common curl wget nano \
+    && git config --global core.editor "nano" \
     && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
         > /etc/apt/sources.list.d/google-cloud-sdk.list \
     && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
         | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - \
-    && add-apt-repository -y ppa:graphics-drivers/ppa \
     && apt-get update \
-    && if [ -n "$NVIDIA_DRIVER_VERSION" ]; then \
-            echo "nvidia-driver-$NVIDIA_DRIVER_VERSION"; \
-        else \
-            apt-cache search ^nvidia-driver- | grep "NVIDIA driver" \
-            | cut -d' ' -f1 | tail -n1; \
-        fi \
-        | DEBIAN_FRONTEND=noninteractive xargs apt-get install --no-install-recommends -y \
-            google-cloud-sdk nvidia-cuda-toolkit \
+    && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+            google-cloud-sdk \
     && apt-get autoremove && apt-get clean

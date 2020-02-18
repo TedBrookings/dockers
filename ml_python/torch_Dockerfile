@@ -45,7 +45,7 @@ RUN conda install -n base --force-reinstall conda \
     && conda install -n base -y --freeze-installed \
         seaborn matplotlib jupyter pytest pytest-cov sortedcontainers psutil \
         memory_profiler line_profiler scipy scikit-learn pandas dask pytables \
-        intervaltree hyperopt autograd \
+        intervaltree hyperopt autograd dill h5py \
     && conda install -n base -y --freeze-installed -c bioconda \
         pybedtools pytabix pysam \
     && conda run -n base pip install --no-cache-dir \

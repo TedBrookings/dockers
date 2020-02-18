@@ -9,13 +9,16 @@ ARG CONDA_CUDNN_VERSION
 
 LABEL maintainer="Ted Brookings <tbrookin@broadinstitute.org>"
 ENV HOME=/root
+ENV JAX_ENABLE_X64=true
 
 # 1) if want to escape reliance on pytorch docker and base from ubuntu,
 #    need to build torch from source. See:
 #    https://github.com/pytorch/pytorch/blob/master/docker/pytorch/Dockerfile
-# 2) if want to avoid need for special conda cudatoolkit, need to build
-#    tensorflow from source:
-#    https://www.tensorflow.org/install/source
+# 2) If want to include tensorflow, either need to install cuda toolkit
+#    in conda:
+#      cudatoolkit=$CONDA_CUDA_VERSION cudnn=$CONDA_CUDNN_VERSION \
+#    or build tensorflow from source:
+#      https://www.tensorflow.org/install/source
 
 # install cmake, google-cloud-sdk (gsutil), then conda and pip packages
 # NOTE: ignore apt-utils warnings: we don't want interactive install anyway!
@@ -43,9 +46,8 @@ RUN conda install -n base --force-reinstall conda \
         seaborn matplotlib jupyter pytest pytest-cov sortedcontainers psutil \
         memory_profiler line_profiler scipy scikit-learn pandas dask pytables \
         intervaltree hyperopt autograd \
-        cudatoolkit=$CONDA_CUDA_VERSION cudnn=$CONDA_CUDNN_VERSION \
     && conda install -n base -y --freeze-installed -c bioconda \
         pybedtools pytabix pysam \
     && conda run -n base pip install --no-cache-dir \
-        MulticoreTSNE phate pyro-ppl jax jaxlib tensorflow-gpu keras xgboost \
+        MulticoreTSNE phate pyro-ppl jax jaxlib xgboost \
     && conda clean -ya

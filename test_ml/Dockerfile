@@ -8,6 +8,7 @@ FROM tedbrookings/ml_python_base:$ML_PYTHON_BASE_TAG
 ARG CONDA_INSTALL_PATH
 ARG CONDA_INSTALLER=/root/miniconda_install.bin
 ARG PYTORCH_GIT_PATH=/opt/pytorch
+ARG TENSORFLOW_GIT_PATH=/opt/tensorflow
 
 LABEL maintainer="Ted Brookings <tbrookin@broadinstitute.org>"
 ENV HOME=/root
@@ -64,6 +65,22 @@ RUN apt-get update \
     && cd $HOME && rm -r $PYTORCH_GIT_PATH \
     && conda remove -y ninja && conda clean -ya
 
+[ *** NOTE *** there are unfinished changes in this file !!! ]
+# build tensorflow from source, install into conda env, and remove source
+RUN sudo apt install python3-dev python3-pip \
+    && conda run -n base pip install --no-cache-dir \
+        six numpy wheel setuptools mock 'future>=0.17.1' \
+    && conda run -n base pip install --no-cache-dir --no-deps \
+        keras_applications keras_preprocessing \
+    && [install bazel]
+    && git clone https://github.com/tensorflow/tensorflow.git $TENSORFLOW_GIT_PATH \
+    && cd $TENSORFLOW_GIT_PATH \
+    && ./configure [need to make this non-interactive, there are preconfigured bazel builds???]
+    && bazel build //tensorflow/tools/pip_package:build_pip_package
+    
+    
+    && cd $HOME && rm -r $TENSORFLOW_GIT_PATH
+    && [uninstall bazel]
 
 #    && conda run -n base pip install --no-cache-dir \
 #        MulticoreTSNE phate pyro-ppl jax jaxlib tensorflow-gpu keras xgboost \

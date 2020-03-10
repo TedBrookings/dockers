@@ -49,5 +49,8 @@ RUN conda install -n base --force-reinstall conda \
     && conda install -n base -y --freeze-installed -c bioconda \
         pybedtools pytabix pysam \
     && conda run -n base pip install --no-cache-dir \
-        MulticoreTSNE phate pyro-ppl jax jaxlib xgboost \
+        igv-jupyter MulticoreTSNE phate pyro-ppl jax jaxlib xgboost \
+    && jupyter serverextension enable --py igv --sys-prefix \
+    && jupyter nbextension install --py igv --sys-prefix \
+    && jupyter nbextension enable --py igv --sys-prefix \
     && conda clean -ya

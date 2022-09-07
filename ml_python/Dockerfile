@@ -1,1 +1,1 @@
-torch_Dockerfile
+conda_pack_dockerfile

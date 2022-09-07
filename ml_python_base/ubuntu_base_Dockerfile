@@ -36,5 +36,5 @@ RUN sed -i 's/^#force_color_prompt=yes$/force_color_prompt=yes/' ~/.bashrc \
             | cut -d' ' -f1 | tail -n1; \
         fi \
         | DEBIAN_FRONTEND=noninteractive xargs apt-get install --no-install-recommends -y \
-            google-cloud-sdk nvidia-cuda-toolkit \
+            google-cloud-sdk nvidia-cuda-toolkit nsight-compute \
     && apt-get autoremove && apt-get clean

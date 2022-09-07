@@ -1,0 +1,8 @@
+# Ignore everything
+**
+# Allow gatk
+!/gatk/gatk
+!/gatk/build/gatkcondaenv.yml
+!/gatk/build/gatkPythonPackageArchive.zip
+# Allow dockers
+!/dockers/**

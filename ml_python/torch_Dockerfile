@@ -19,11 +19,9 @@ ENV JAX_ENABLE_X64=true
 
 # install cmake, google-cloud-sdk (gsutil), then conda and pip packages
 # NOTE: ignore apt-utils warnings: we don't want interactive install anyway!
-RUN sed -i 's/^#force_color_prompt=yes$/force_color_prompt=yes/' ~/.bashrc \
-    && git config --global core.editor "nano" \
-    && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
         apt-transport-https ca-certificates gnupg-agent \
-        software-properties-common wget nano cmake\
+        software-properties-common curl wget nano cmake git \
     && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
         > /etc/apt/sources.list.d/google-cloud-sdk.list \
     && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
@@ -31,6 +29,8 @@ RUN sed -i 's/^#force_color_prompt=yes$/force_color_prompt=yes/' ~/.bashrc \
     && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
         google-cloud-sdk \
+    && sed -i 's/^#force_color_prompt=yes$/force_color_prompt=yes/' ~/.bashrc \
+    && git config --global core.editor "nano" \
     && apt-get autoremove && apt-get clean
    
 # install 
@@ -45,7 +45,7 @@ RUN conda config --prepend channels conda-forge \
     && conda install -n base -y --freeze-installed -c bioconda \
         pybedtools pytabix pysam \
     && conda run -n base pip install --no-cache-dir \
-        igv-jupyter MulticoreTSNE phate pyro-ppl fastai jax jaxlib xgboost \
+        igv-jupyter phate pyro-ppl fastai jax jaxlib xgboost \
     && jupyter serverextension enable --py igv --sys-prefix \
     && jupyter nbextension install --py igv --sys-prefix \
     && jupyter nbextension enable --py igv --sys-prefix \
